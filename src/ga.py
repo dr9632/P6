@@ -347,12 +347,53 @@ def generate_successors(population):
     results = []
     # STUDENT Design and implement this
     # Hint: Call generate_children() on some individuals and fill up results.
+
+    # roulette selection
+    total_fitness = 0
+    fitness = []
+
+    # sums up the total fitness of the population
+    # and appends it to the list fitness
+    for n in range(len(population)):
+        fitness.append(population[n]._fitness)
+        total_fitness += population[n]._fitness
+
+    # calculates the relative frequency of each
+    # fitness value within the fitness list
+    relative_fitness = [f/total_fitness for f in fitness]
+
+    # calculates the probability of each
+    # fitness values
+    probability = [sum(relative_fitness[:i+1])
+                   for i in range(len(relative_fitness))]
+
+    # selects best child
+    r = random.random()
+    n = 0
+
+    # loops through population
+    # and checks if r is less than
+    # the probability  and n is just
+    # an arbitrary number used to keep
+    # looping through population and fill
+    # up results
+    for (i, individual) in enumerate(population):
+        if r <= probability[i] and n < 14:
+
+            # just choosing the first item within
+            # population
+            individuals = Individual_Grid.generate_children(population[0], individual)
+            results.append(individuals[0])
+            n += 1
+
     return results
+
+
 
 
 def ga():
     # STUDENT Feel free to play with this parameter
-    pop_limit = 480
+    pop_limit = 16
     # Code to parallelize some computations
     batches = os.cpu_count()
     if pop_limit % batches != 0:
@@ -379,6 +420,7 @@ def ga():
                 now = time.time()
                 # Print out statistics
                 if generation > 0:
+                    print(population)
                     best = max(population, key=Individual.fitness)
                     print("Generation:", str(generation))
                     print("Max fitness:", str(best.fitness()))
