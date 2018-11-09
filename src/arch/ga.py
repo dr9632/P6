@@ -8,7 +8,7 @@ import shutil
 import time
 import math
 
-width = 60
+width = 200
 height = 16
 
 options = [
@@ -25,16 +25,6 @@ options = [
     #"v",  # a flagpole, do not generate
     #"m"  # mario's start position, do not generate
 ]
-
-options_weight = {
-    "-": 0.85,  # an empty space
-    "X": 0.80,  # a solid wall
-    "B": 0.80,  # a breakable block
-    "?": 0.90,  # a question mark block with a coin
-    "o": 0.90,  # a coin
-    "M": 0.95,  # a question mark block with a mushroom
-    "E": 1 # an enemy
-}   # Pipes are placed separately
 
 # The level as a grid of tiles
 
@@ -88,6 +78,7 @@ class Individual_Grid(object):
     # Create zero or more children from self and other
     def generate_children(self, other):
         new_genome = copy.deepcopy(self.genome)
+        #print(new_genome)
         # Leaving first and last columns alone...
         # do crossover with other
         left = 1
@@ -97,7 +88,6 @@ class Individual_Grid(object):
                 # STUDENT Which one should you take?  Self, or other?  Why?
                 # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
                 pass
-                 
         # do mutation; note we're returning a one-element tuple here
         return (Individual_Grid(new_genome),)
 
@@ -124,58 +114,11 @@ class Individual_Grid(object):
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
         # STUDENT also consider weighting the different tile types so it's not uniformly random
         g = [random.choices(options, k=width) for row in range(height)]
-        for i in range(0, 6):
-            g[i][:] = ["-"] * width
-
-        g[14][:] = ["-"] * width
-        g[13][:] = ["-"] * width
-
-        # Ground
         g[15][:] = ["X"] * width
-        
-        # Pipe placement
-        pip_range = random.randint(4, 16)   # Number of pipe generated
-        pip_latest = 4   # To prevent the overlapping pipe
-        for i in range(0, pip_range):
-            # Height of pipe
-            pip_h = random.randint(1, 3)
-            # Column location
-            pip_c = random.randint(pip_latest, width - 4)
-            if pip_c < pip_latest + 4:
-                pip_c += 5
-            if pip_c >= width - 4:
-                break
-            for j in range(0, pip_h):
-                g[15 - j][pip_c] = '|'
-            g[15 - pip_h][pip_c] = 'T'
-            # Update the closest pipe location
-            pip_latest = pip_c
-
-        # Holes
-        hole_range = random.randint(1, 4)   # Number of pipe generated
-        hole_latest = 10
-        for i in range(0, hole_range):
-            # Column location
-            hole_c = random.randint(hole_latest, width - 10)
-            if hole_c >= width - 10:
-                break
-            if hole_c < hole_latest + 7:
-                hole_c += 8
-            # Check if there is pipe around or not
-            if g[15][hole_c] != '|':
-                for j in range(0, 2):
-                    g[15][hole_c - j] = '-'
-            # Update the closest hole location
-            if hole_c + 1 < width - 10:
-                hole_latest = hole_c + 1
-            else:
-                break
-
         g[14][0] = "m"
-
-        g[7][-2] = "v"
-        g[8:14][-2] = ["f"] * 6
-        g[14:16][-2] = ["X", "X"]
+        g[7][-1] = "v"
+        g[8:14][-1] = ["f"] * 6
+        g[14:16][-1] = ["X", "X"]
         return cls(g)
 
 
@@ -405,53 +348,15 @@ def generate_successors(population):
     results = []
     # STUDENT Design and implement this
     # Hint: Call generate_children() on some individuals and fill up results.
-
-    # roulette selection
-    total_fitness = 0
-    fitness = []
-
-    # sums up the total fitness of the population
-    # and appends it to the list fitness
-    for n in range(len(population)):
-        fitness.append(population[n]._fitness)
-        total_fitness += population[n]._fitness
-
-    # calculates the relative frequency of each
-    # fitness value within the fitness list
-    relative_fitness = [f/total_fitness for f in fitness]
-
-    # calculates the probability of each
-    # fitness values
-    probability = [sum(relative_fitness[:i+1])
-                   for i in range(len(relative_fitness))]
-
-    # selects best child
-    r = random.random()
-    n = 0
-
-    # loops through population
-    # and checks if r is less than
-    # the probability  and n is just
-    # an arbitrary number used to keep
-    # looping through population and fill
-    # up results
-    for (i, individual) in enumerate(population):
-        if r <= probability[i] and n < 14:
-
-            # just choosing the first item within
-            # population
-            individuals = Individual_Grid.generate_children(population[0], individual)
-            results.append(individuals[0])
-            n += 1
-
+    # Need to go thorugh selection process
+    results = population
+    #print(population[0].fitness())
     return results
-
-
 
 
 def ga():
     # STUDENT Feel free to play with this parameter
-    pop_limit = 60
+    pop_limit = 480
     # Code to parallelize some computations
     batches = os.cpu_count()
     if pop_limit % batches != 0:
@@ -493,6 +398,7 @@ def ga():
                     break
                 # STUDENT Also consider using FI-2POP as in the Sorenson & Pasquier paper
                 gentime = time.time()
+                #print(population)
                 next_population = generate_successors(population)
                 gendone = time.time()
                 print("Generated successors in:", gendone - gentime, "seconds")
