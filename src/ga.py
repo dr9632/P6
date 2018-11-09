@@ -370,6 +370,7 @@ def generate_successors(population):
     # selects best child
     r = random.random()
     n = 0
+    individuals = []
 
     # loops through population
     # and checks if r is less than
@@ -378,13 +379,35 @@ def generate_successors(population):
     # looping through population and fill
     # up results
     for (i, individual) in enumerate(population):
-        if r <= probability[i] and n < 14:
+        if r <= probability[i] and n < 16:
 
             # just choosing the first item within
             # population
             individuals = Individual_Grid.generate_children(population[0], individual)
             results.append(individuals[0])
+
             n += 1
+
+    # tournament selection
+    # randomly selects from population
+    # then chooses the one with the
+    # best fitness score and appends it
+    # to best
+    tournament = []
+    best = []
+    i = 0
+    while i < 2:
+        tournament.append(random.choice(population))
+        i += 1
+    if tournament[0]._fitness < tournament[1]._fitness:
+        best.append(test[0])
+    else:
+        best.append(test[1])
+
+    indiv = Individual_Grid.generate_children(population[0], best)
+    results.append(indiv[0])
+
+
 
     return results
 
