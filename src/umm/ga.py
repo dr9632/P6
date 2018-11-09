@@ -115,7 +115,7 @@ class Individual_Grid(object):
     def random_individual(cls):
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
         # STUDENT also consider weighting the different tile types so it's not uniformly random
-        g = [random.choices(options,weights=[3, .3, .2,.2, .2, .1, .05, .1] , k=width) for row in range(height)] #modify this to keep pipes etc from spawning in the air
+        g = [random.choices(options,weights=[3, .3, .2, .2, .2, .1, .05, .1], k=width) for row in range(height)] #modify this to keep pipes etc from spawning in the air
         for i in range(4):
             g[i] = ['-'] * width
         g[15][:] = ["X"] * width
@@ -372,8 +372,9 @@ def generate_successors(population):#start here
 
         results.append(child)
 
-    
     return results
+
+
 def tournament_selection(population, num_possible_parents):
     best = None
     random_order = population.copy()
