@@ -8,7 +8,7 @@ import shutil
 import time
 import math
 
-width = 60
+width = 80
 height = 16
 
 options = [
@@ -27,12 +27,12 @@ options = [
 ]
 
 options_weight = {
-    "-": 0.85,  # an empty space
-    "X": 0.80,  # a solid wall
-    "B": 0.80,  # a breakable block
-    "?": 0.90,  # a question mark block with a coin
-    "o": 0.90,  # a coin
+    "-": 0.875,  # an empty space
+    "B": 0.50,  # a breakable block
+    "?": 0.85,  # a question mark block with a coin
     "M": 0.95,  # a question mark block with a mushroom
+    "o": 0.95,  # a coin
+    "X": 0.80,  # a solid wall
     "E": 1 # an enemy
 }   # Pipes are placed separately
 
@@ -96,6 +96,7 @@ class Individual_Grid(object):
             for x in range(left, right):
                 # STUDENT Which one should you take?  Self, or other?  Why?
                 # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
+                #if self[x][y] == '?' or self[x][y] == 'M' or self[x][y] == 'X':
                 pass
                  
         # do mutation; note we're returning a one-element tuple here
@@ -123,7 +124,17 @@ class Individual_Grid(object):
     def random_individual(cls):
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
         # STUDENT also consider weighting the different tile types so it's not uniformly random
-        g = [random.choices(options, k=width) for row in range(height)]
+        g = [(['-'] * width) for row in range(height)]
+
+        for row in range(6, 13):
+            for col in range(4, width - 3):
+                for op, w in options_weight.items():
+                    t = random.random()
+                    if w > t:
+                        g[row][col] = op
+                        break
+
+        # First 6 rows and last 2 rows above ground is whitespaces
         for i in range(0, 6):
             g[i][:] = ["-"] * width
 
@@ -173,9 +184,9 @@ class Individual_Grid(object):
 
         g[14][0] = "m"
 
-        g[7][-2] = "v"
-        g[8:14][-2] = ["f"] * 6
-        g[14:16][-2] = ["X", "X"]
+        g[7][-1] = "v"
+        g[8:14][-1] = ["f"] * 6
+        g[14:16][-1] = ["X", "X"]
         return cls(g)
 
 
@@ -458,9 +469,9 @@ def generate_successors(population):
         tournament.append(random.choice(population))
         i += 1
     if tournament[0]._fitness < tournament[1]._fitness:
-        best.append(test[0])
+        best.append(tournament[0])
     else:
-        best.append(test[1])
+        best.append(tournament[1])
 
     indiv = Individual_Grid.generate_children(population[0], best)
     results.append(indiv[0])
