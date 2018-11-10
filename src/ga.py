@@ -8,7 +8,7 @@ import shutil
 import time
 import math
 
-width = 80
+width = 60
 height = 16
 
 options = [
@@ -28,13 +28,16 @@ options = [
 
 options_weight = {
     "-": 0.875,  # an empty space
-    "B": 0.50,  # a breakable block
+    "B": 0.30,  # a breakable block
     "?": 0.85,  # a question mark block with a coin
     "M": 0.95,  # a question mark block with a mushroom
     "o": 0.95,  # a coin
     "X": 0.80,  # a solid wall
     "E": 1 # an enemy
 }   # Pipes are placed separately
+
+block = ['B', '?', 'M', 'X']
+obj = ['o', 'E']
 
 # The level as a grid of tiles
 
@@ -78,9 +81,9 @@ class Individual_Grid(object):
         # STUDENT also consider weighting the different tile types so it's not uniformly random
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
 
-        left = 1
-        right = width - 1
-        for y in range(height):
+        left = 7
+        right = width - 10
+        for y in range(6, 13):
             for x in range(left, right):
                 pass
         return genome
@@ -90,15 +93,37 @@ class Individual_Grid(object):
         new_genome = copy.deepcopy(self.genome)
         # Leaving first and last columns alone...
         # do crossover with other
-        left = 1
-        right = width - 1
+        left = 7
+        right = width - 10
+
+        self_choice = random.choice([True, False])
         for y in range(height):
+            self_choice = random.choice([True, False])
             for x in range(left, right):
                 # STUDENT Which one should you take?  Self, or other?  Why?
                 # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
-                #if self[x][y] == '?' or self[x][y] == 'M' or self[x][y] == 'X':
-                pass
-                 
+                if self_choice:
+                    new_genome[y][x] = self.genome[y][x]
+                else:
+                    new_genome[y][x] = other.genome[y][x]
+
+                
+                # Refine genome
+                # Remove randomly floating pipe top
+                #new_genome = box_grouping(new_genome, y, x)
+                if (new_genome[y][x] != '|' and new_genome[y-1][x] == 'T') or (new_genome[y][x] == '|' and new_genome[y][x-1] == '|'):
+                    new_genome[y-1][x] = '-'
+                elif new_genome[y][x] == '|' and new_genome[y-1][x] != 'T':
+                    new_genome[y-1][x] = 'T'
+                elif new_genome[y][x] == 'X' and new_genome[y-1][x] == '|':
+                    new_genome[y][x] == '|'
+                    x += 1
+                elif new_genome[y][x] == '-' and y == 15:
+                    inner_r = y - 1
+                    while new_genome[inner_r][x] != '-' or inner_r == 0:
+                        new_genome[inner_r][x] = '-'
+                        inner_r -= 1
+                    
         # do mutation; note we're returning a one-element tuple here
         return (Individual_Grid(new_genome),)
 
@@ -126,20 +151,22 @@ class Individual_Grid(object):
         # STUDENT also consider weighting the different tile types so it's not uniformly random
         g = [(['-'] * width) for row in range(height)]
 
-        for row in range(6, 13):
-            for col in range(4, width - 3):
+        for row in range(7, 13):
+            for col in range(7, width - 10):
                 for op, w in options_weight.items():
                     t = random.random()
                     if w > t:
                         g[row][col] = op
+                        if op in block:
+                            g = box_grouping(g, row, col)
+                        elif op in obj:
+                            #check if there is block underneath obj
+                            pass
                         break
 
         # First 6 rows and last 2 rows above ground is whitespaces
-        for i in range(0, 6):
-            g[i][:] = ["-"] * width
-
-        g[14][:] = ["-"] * width
-        g[13][:] = ["-"] * width
+        g[0:7][:] = ["-"] * width
+        g[13:12][:] = ["-"] * width
 
         # Ground
         g[15][:] = ["X"] * width
@@ -183,12 +210,33 @@ class Individual_Grid(object):
                 break
 
         g[14][0] = "m"
-
-        g[7][-1] = "v"
-        g[8:14][-1] = ["f"] * 6
-        g[14:16][-1] = ["X", "X"]
+        g[7][-2] = "v"
+        g[8:14][-2] = ["f"] * 6
+        g[14:16][-2] = ["X", "X"]
         return cls(g)
 
+
+def box_grouping(g, row, col):
+    # Create group of box row
+    box_in_row = random.randint(4, 8)
+    for inner_c in range(1, box_in_row):
+        if col + inner_c > width - 8:
+            break
+        if g[row][col + inner_c] is '-':
+            g[row][col + inner_c] = random.choice(block)
+            # Clear out the surrounding area or place item/enemy on it)
+            # Whitespace preferred
+            for inner_r in range(-3, 4):
+                if row + inner_r >= 13:
+                    break
+                if g[row + inner_r][col + inner_c] is not '-' and inner_r != 0:
+                    g[row + inner_r][col + inner_c] = '-'
+                    for ob in obj:
+                        t = random.random()
+                        if 0.43 > t:
+                            g[row + inner_r][col + inner_c] = ob
+    return g
+    
 
 def offset_by_upto(val, variance, min=None, max=None):
     val += random.normalvariate(0, variance**0.5)
@@ -473,19 +521,15 @@ def generate_successors(population):
     else:
         best.append(tournament[1])
 
-    indiv = Individual_Grid.generate_children(population[0], best)
+    indiv = Individual_Grid.generate_children(population[0], best[0])
     results.append(indiv[0])
-
-
 
     return results
 
 
-
-
 def ga():
     # STUDENT Feel free to play with this parameter
-    pop_limit = 60
+    pop_limit = 280
     # Code to parallelize some computations
     batches = os.cpu_count()
     if pop_limit % batches != 0:
