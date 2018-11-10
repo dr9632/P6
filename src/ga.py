@@ -84,36 +84,27 @@ class Individual_Grid(object):
         left = 7
         right = width - 10
 
-        if random.random() < 0.15 and len(genome) > 0:
+        if random.random() < 0.10 and len(genome) > 0:
+            choice = random.random()
             for y in range(6, 13):
                 choice = random.random()
                 for x in range(left, right):
                     if genome[y][x] == "X":
                         if choice < .33:
                             genome[y][x] = "-"
-                        else:
-                            choice = random.random()
-                    if genome[y][x] == "-":
-                        if choice < .66:
+                    elif genome[y][x] == "-":
+                        if choice < .15:
                             genome[y][x] = "o"
-                        else:
-                            choice = random.random()
-                    if genome[y][x] == "?":
-                        if choice < .85:
+                    elif genome[y][x] == "?":
+                        if choice < .34:
                             genome[y][x] = "B"
-                        else:
-                            choice = random.random()
-                    if genome[y][x] == "M":
-                        if choice < .74:
+                    elif genome[y][x] == "M":
+                        if choice < .15:
                             genome[y][x] = "B"
-                        else:
-                            choice = random.random()
-                    if genome[y][x] == "B":
+                    elif genome[y][x] == "B":
                         if choice < .20:
                             genome[y][x] = "M"
-                        else:
-                            choice = random.random()
-                    if genome[y][x] == "o":
+                    elif genome[y][x] == "o":
                         if choice < .15:
                             genome[y][x] = "B"
         return genome
@@ -169,11 +160,11 @@ class Individual_Grid(object):
         g = [["-" for col in range(width)] for row in range(height)]
         g[15][:] = ["X"] * width
         g[14][0] = "m"
-        g[7][-1] = "v"
+        g[7][-4] = "v"
         for col in range(8, 14):
-            g[col][-1] = "f"
+            g[col][-4] = "f"
         for col in range(14, 16):
-            g[col][-1] = "X"
+            g[col][-4] = "X"
         return cls(g)
 
     @classmethod
@@ -522,10 +513,8 @@ def generate_successors(population):#start here
         parent1 = tournament_selection(population, K)
         parent2 = tournament_selection(population, K)
         child = parent1.generate_children(parent2)[0]
-
         results.append(child)
 
-    while len(results) < N:
         parent = random_selection(population, K)
         child = parent.generate_children(parent)[0]
         results.append(child)
@@ -595,7 +584,7 @@ def ga():
                             f.write("".join(row) + "\n")
                 generation += 1
                 # STUDENT Determine stopping condition
-                stop_condition = 50
+                stop_condition = 10
                 if stop_condition <= generation:
                     break
                 # STUDENT Also consider using FI-2POP as in the Sorenson & Pasquier paper
@@ -621,7 +610,7 @@ if __name__ == "__main__":
     print("Best fitness: " + str(best.fitness()))
     now = time.strftime("%m_%d_%H_%M_%S")
     # STUDENT You can change this if you want to blast out the whole generation, or ten random samples, or...
-    for k in range(0, 10):
+    for k in range(0, 39):
         with open("levels/" + now + "_" + str(k) + ".txt", 'w') as f:
             for row in final_gen[k].to_level():
                 f.write("".join(row) + "\n")
