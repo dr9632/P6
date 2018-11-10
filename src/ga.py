@@ -84,29 +84,38 @@ class Individual_Grid(object):
         left = 7
         right = width - 10
 
-        if random.random() < 0.90 and len(genome) > 0:
-            choice = random.random()
+        if random.random() < 0.15 and len(genome) > 0:
             for y in range(6, 13):
+                choice = random.random()
                 for x in range(left, right):
                     if genome[y][x] == "X":
                         if choice < .33:
                             genome[y][x] = "-"
+                        else:
+                            choice = random.random()
                     if genome[y][x] == "-":
                         if choice < .66:
                             genome[y][x] = "o"
+                        else:
+                            choice = random.random()
                     if genome[y][x] == "?":
                         if choice < .85:
                             genome[y][x] = "B"
+                        else:
+                            choice = random.random()
                     if genome[y][x] == "M":
                         if choice < .74:
                             genome[y][x] = "B"
+                        else:
+                            choice = random.random()
                     if genome[y][x] == "B":
                         if choice < .20:
                             genome[y][x] = "M"
+                        else:
+                            choice = random.random()
                     if genome[y][x] == "o":
                         if choice < .15:
                             genome[y][x] = "B"
-                    pass
         return genome
 
     # Create zero or more children from self and other
@@ -146,8 +155,8 @@ class Individual_Grid(object):
                         inner_r -= 1
 
         # do mutation; note we're returning a one-element tuple here
-
         return (Individual_Grid(self.mutate(new_genome)), )
+        #return (Individual_Grid(new_genome), )
 
     # Turn the genome into a level string (easy for this genome)
     def to_level(self):
@@ -232,9 +241,11 @@ class Individual_Grid(object):
                 break
 
         g[14][0] = "m"
-        g[7][-2] = "v"
-        g[8:14][-2] = ["f"] * 6
-        g[14:16][-2] = ["X", "X"]
+        g[7][-4] = "v"
+        for col in range(8, 14):
+            g[col][-4] = "f"
+        for col in range(14, 16):
+            g[col][-4] = "X"
         return cls(g)
 
 
@@ -308,6 +319,15 @@ class Individual_DE(object):
         # STUDENT For example, too many stairs are unaesthetic.  Let's penalize that
         if len(list(filter(lambda de: de[1] == "6_stairs", self.genome))) > 5:
             penalties -= 2
+
+        # Giving penalty to: Too much pipes and holes
+        if len(list(filter(lambda de: de[1] == "0_hole" or de[1] == "7_pipe", self.genome))) > 9:
+            penalties -= 1
+
+        # Removing penalty to: 
+        if len(list(filter(lambda de: de[1] == "0_hole" or de[1] == "7_pipe", self.genome))) > 9:
+            penalties -= 1
+            
         # STUDENT If you go for the FI-2POP extra credit, you can put constraint calculation in here too and cache it in a new entry in __slots__.
         self._fitness = sum(map(lambda m: coefficients[m] * measurements[m],
                                 coefficients)) + penalties
@@ -322,6 +342,7 @@ class Individual_DE(object):
         # STUDENT How does this work?  Explain it in your writeup.
         # STUDENT consider putting more constraints on this, to prevent generating weird things
         if random.random() < 0.1 and len(new_genome) > 0:
+            #print(new_genome)
             to_change = random.randint(0, len(new_genome) - 1)
             de = new_genome[to_change]
             new_de = de
@@ -337,6 +358,9 @@ class Individual_DE(object):
                     y = offset_by_upto(y, height / 2, min=0, max=height - 1)
                 else:
                     breakable = not de[3]
+                # If its not breakable block, low chance of enemy spawn
+                if not breakable and choice < 0.15:
+                    new_genome.append(x, '2_enemy')
                 new_de = (x, de_type, y, breakable)
             elif de_type == "5_qblock":
                 y = de[2]
@@ -357,14 +381,14 @@ class Individual_DE(object):
                 new_de = (x, de_type, y)
             elif de_type == "7_pipe":
                 h = de[2]
-                if choice < 0.5:
+                if choice < 0.25:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 else:
                     h = offset_by_upto(h, 2, min=2, max=height - 4)
                 new_de = (x, de_type, h)
             elif de_type == "0_hole":
                 w = de[2]
-                if choice < 0.5:
+                if choice < 0.33:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 else:
                     w = offset_by_upto(w, 4, min=1, max=width - 2)
@@ -391,6 +415,9 @@ class Individual_DE(object):
                     y = offset_by_upto(y, height, min=0, max=height - 1)
                 else:
                     madeof = random.choice(["?", "X", "B"])
+                # Low chance of enemy spawn on platform
+                if choice < 0.10:
+                    new_genome.append(x, '2_enemy')
                 new_de = (x, de_type, w, y, madeof)
             elif de_type == "2_enemy":
                 pass
@@ -479,7 +506,7 @@ class Individual_DE(object):
         return Individual_DE(g)
 
 
-Individual = Individual_Grid
+Individual = Individual_DE
 
 
 def generate_successors(population):#start here
@@ -513,7 +540,7 @@ def tournament_selection(population, num_possible_parents):
 
     for i in range(num_possible_parents):
         individual = random_order[i]
-        if best is None or individual.fitness() < best.fitness():
+        if best is None or individual.fitness() > best.fitness():
             best = individual
 
     return individual
@@ -539,8 +566,9 @@ def ga():
     with mpool.Pool(processes=os.cpu_count()) as pool:
         init_time = time.time()
         # STUDENT (Optional) change population initialization
-        population = [Individual.random_individual() if random.random() < 0.9
-                      else Individual.empty_individual()
+        population = [Individual.random_individual()
+                      #if random.random() < 0.9
+                      #else Individual.empty_individual()
                       for _g in range(pop_limit)]
         # But leave this line alone; we have to reassign to population because we get a new population that has more cached stuff in it.
         population = pool.map(Individual.calculate_fitness,
