@@ -8,7 +8,7 @@ import shutil
 import time
 import math
 
-width = 60
+width = 200
 height = 16
 
 options = [
@@ -84,27 +84,36 @@ class Individual_Grid(object):
         left = 7
         right = width - 10
 
-        if random.random() < 0.10 and len(genome) > 0:
-            choice = random.random()
+        if random.random() < 0.15 and len(genome) > 0:
             for y in range(6, 13):
                 choice = random.random()
                 for x in range(left, right):
                     if genome[y][x] == "X":
                         if choice < .33:
                             genome[y][x] = "-"
-                    elif genome[y][x] == "-":
-                        if choice < .15:
+                        else:
+                            choice = random.random()
+                    if genome[y][x] == "-":
+                        if choice < .66:
                             genome[y][x] = "o"
-                    elif genome[y][x] == "?":
-                        if choice < .34:
+                        else:
+                            choice = random.random()
+                    if genome[y][x] == "?":
+                        if choice < .85:
                             genome[y][x] = "B"
-                    elif genome[y][x] == "M":
-                        if choice < .15:
+                        else:
+                            choice = random.random()
+                    if genome[y][x] == "M":
+                        if choice < .74:
                             genome[y][x] = "B"
-                    elif genome[y][x] == "B":
+                        else:
+                            choice = random.random()
+                    if genome[y][x] == "B":
                         if choice < .20:
                             genome[y][x] = "M"
-                    elif genome[y][x] == "o":
+                        else:
+                            choice = random.random()
+                    if genome[y][x] == "o":
                         if choice < .15:
                             genome[y][x] = "B"
         return genome
@@ -160,11 +169,11 @@ class Individual_Grid(object):
         g = [["-" for col in range(width)] for row in range(height)]
         g[15][:] = ["X"] * width
         g[14][0] = "m"
-        g[7][-4] = "v"
+        g[7][-1] = "v"
         for col in range(8, 14):
-            g[col][-4] = "f"
+            g[col][-1] = "f"
         for col in range(14, 16):
-            g[col][-4] = "X"
+            g[col][-1] = "X"
         return cls(g)
 
     @classmethod
@@ -315,8 +324,8 @@ class Individual_DE(object):
         if len(list(filter(lambda de: de[1] == "0_hole" or de[1] == "7_pipe", self.genome))) > 9:
             penalties -= 1
 
-        # Removing penalty to: 
-        if len(list(filter(lambda de: de[1] == "0_hole" or de[1] == "7_pipe", self.genome))) > 9:
+        # Giving penalty to: Too much coins and enemies
+        if len(list(filter(lambda de: de[1] == "2_enemy" or de[1] == "3_coin", self.genome))) > 19:
             penalties -= 1
             
         # STUDENT If you go for the FI-2POP extra credit, you can put constraint calculation in here too and cache it in a new entry in __slots__.
@@ -513,8 +522,10 @@ def generate_successors(population):#start here
         parent1 = tournament_selection(population, K)
         parent2 = tournament_selection(population, K)
         child = parent1.generate_children(parent2)[0]
+
         results.append(child)
 
+    while len(results) < N:
         parent = random_selection(population, K)
         child = parent.generate_children(parent)[0]
         results.append(child)
@@ -584,7 +595,7 @@ def ga():
                             f.write("".join(row) + "\n")
                 generation += 1
                 # STUDENT Determine stopping condition
-                stop_condition = 10
+                stop_condition = 50
                 if stop_condition <= generation:
                     break
                 # STUDENT Also consider using FI-2POP as in the Sorenson & Pasquier paper
@@ -610,7 +621,7 @@ if __name__ == "__main__":
     print("Best fitness: " + str(best.fitness()))
     now = time.strftime("%m_%d_%H_%M_%S")
     # STUDENT You can change this if you want to blast out the whole generation, or ten random samples, or...
-    for k in range(0, 39):
+    for k in range(0, 10):
         with open("levels/" + now + "_" + str(k) + ".txt", 'w') as f:
             for row in final_gen[k].to_level():
                 f.write("".join(row) + "\n")
