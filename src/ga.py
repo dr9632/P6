@@ -32,7 +32,7 @@ options_weight = {
     "?": 0.85,  # a question mark block with a coin
     "M": 0.95,  # a question mark block with a mushroom
     "o": 0.95,  # a coin
-    "X": 0.80,  # a solid wall
+    "X": 0.95,  # a solid wall
     "E": 1 # an enemy
 }   # Pipes are placed separately
 
@@ -83,9 +83,30 @@ class Individual_Grid(object):
 
         left = 7
         right = width - 10
-        for y in range(6, 13):
-            for x in range(left, right):
-                pass
+
+        if random.random() < 0.90 and len(genome) > 0:
+            choice = random.random()
+            for y in range(6, 13):
+                for x in range(left, right):
+                    if genome[y][x] == "X":
+                        if choice < .33:
+                            genome[y][x] = "-"
+                    if genome[y][x] == "-":
+                        if choice < .66:
+                            genome[y][x] = "o"
+                    if genome[y][x] == "?":
+                        if choice < .85:
+                            genome[y][x] = "B"
+                    if genome[y][x] == "M":
+                        if choice < .74:
+                            genome[y][x] = "B"
+                    if genome[y][x] == "B":
+                        if choice < .20:
+                            genome[y][x] = "M"
+                    if genome[y][x] == "o":
+                        if choice < .15:
+                            genome[y][x] = "B"
+                    pass
         return genome
 
     # Create zero or more children from self and other
@@ -102,7 +123,7 @@ class Individual_Grid(object):
             for x in range(left, right):
                 # STUDENT Which one should you take?  Self, or other?  Why?
                 # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
-                if self_choice:
+                if self_choice is True:
                     new_genome[y][x] = self.genome[y][x]
                 else:
                     new_genome[y][x] = other.genome[y][x]
@@ -125,7 +146,8 @@ class Individual_Grid(object):
                         inner_r -= 1
 
         # do mutation; note we're returning a one-element tuple here
-        return (Individual_Grid(new_genome),)
+
+        return (Individual_Grid(self.mutate(new_genome)), )
 
     # Turn the genome into a level string (easy for this genome)
     def to_level(self):
@@ -460,73 +482,6 @@ class Individual_DE(object):
 Individual = Individual_Grid
 
 
-# def generate_successors(population):
-#     results = []
-#     # STUDENT Design and implement this
-#     # Hint: Call generate_children() on some individuals and fill up results.
-#
-#     # roulette selection
-#     total_fitness = 0
-#     fitness = []
-#
-#     # sums up the total fitness of the population
-#     # and appends it to the list fitness
-#     for n in range(len(population)):
-#         fitness.append(population[n]._fitness)
-#         total_fitness += population[n]._fitness
-#
-#     # calculates the relative frequency of each
-#     # fitness value within the fitness list
-#     relative_fitness = [f/total_fitness for f in fitness]
-#
-#     # calculates the probability of each
-#     # fitness values
-#     probability = [sum(relative_fitness[:i+1])
-#                    for i in range(len(relative_fitness))]
-#
-#     # selects best child
-#     r = random.random()
-#     n = 0
-#     individuals = []
-#
-#     # loops through population
-#     # and checks if r is less than
-#     # the probability  and n is just
-#     # an arbitrary number used to keep
-#     # looping through population and fill
-#     # up results
-#     for (i, individual) in enumerate(population):
-#         if r <= probability[i] and n < 16:
-#
-#             # just choosing the first item within
-#             # population
-#             individuals = Individual_Grid.generate_children(population[0], individual)
-#             results.append(individuals[0])
-#
-#             n += 1
-#
-#     # tournament selection
-#     # randomly selects from population
-#     # then chooses the one with the
-#     # best fitness score and appends it
-#     # to best
-#     tournament = []
-#     best = []
-#     i = 0
-#     while i < 2:
-#         tournament.append(random.choice(population))
-#         i += 1
-#     if tournament[0]._fitness < tournament[1]._fitness:
-#         best.append(tournament[0])
-#     else:
-#         best.append(tournament[1])
-#
-#     indiv = Individual_Grid.generate_children(population[0], best)
-#     results.append(indiv[0])
-#
-#     return results
-
-
 def generate_successors(population):#start here
     results = []
     N = 40
@@ -542,6 +497,11 @@ def generate_successors(population):#start here
         child = parent1.generate_children(parent2)[0]
 
         results.append(child)
+
+    while len(results) < N:
+        parent = random_selection(population, K)
+        child = parent.generate_children(parent)[0]
+        results.append(child)
         
     return results
 
@@ -553,12 +513,20 @@ def tournament_selection(population, num_possible_parents):
 
     for i in range(num_possible_parents):
         individual = random_order[i]
-        if best is None or individual.fitness()<best.fitness():
+        if best is None or individual.fitness() < best.fitness():
             best = individual
+
     return individual
 
 
+def random_selection(population, num_possible_parents):
+    random_order = population.copy()
+    random.shuffle(random_order)
 
+    for i in range(num_possible_parents):
+        individual = random_order[i]
+
+    return individual
 
 def ga():
     # STUDENT Feel free to play with this parameter
@@ -599,7 +567,7 @@ def ga():
                             f.write("".join(row) + "\n")
                 generation += 1
                 # STUDENT Determine stopping condition
-                stop_condition = 100
+                stop_condition = 50
                 if stop_condition <= generation:
                     break
                 # STUDENT Also consider using FI-2POP as in the Sorenson & Pasquier paper
@@ -625,7 +593,7 @@ if __name__ == "__main__":
     print("Best fitness: " + str(best.fitness()))
     now = time.strftime("%m_%d_%H_%M_%S")
     # STUDENT You can change this if you want to blast out the whole generation, or ten random samples, or...
-    for k in range(0, 98):
+    for k in range(0, 10):
         with open("levels/" + now + "_" + str(k) + ".txt", 'w') as f:
             for row in final_gen[k].to_level():
                 f.write("".join(row) + "\n")
